@@ -1,4 +1,4 @@
-import Inventory from '../models/Inventory';
+import Inventory from '../../models/Inventory';
 
 class InventoryController {
     getAllInventory(req, res) {
