@@ -10,6 +10,21 @@ class ProductController {
                 message: '',
                 products: products,
             });
+        })
+        .limit(10)
+        .sort({ crtTs: 'desc' });
+    }
+
+    checkProductByBrandAndTitle(brand, title) {
+        Product.find({ brand, title })
+        .exec((err, product) => {
+            if (err) throw err;
+
+            if (product === null) {
+                return false;
+            }
+
+            return true;
         });
     }
 
@@ -21,35 +36,37 @@ class ProductController {
             category_id,
             images,
             mrp,
+            features,
         } = data;
 
-        Product.findOne({ brand: brand, title: title }, (err, product) => {
-            if (err) throw err;
+        const check = productController.checkProductByBrandAndTitle(brand, title);
+
+        if (!check) {
+            const newProduct = new Product({
+                crtTs: new Date(),
+                title,
+                description,
+                brand,
+                category_id,
+                images,
+                mrp,
+                features,
+            });
+
+            newProduct.save(err => {
+                if (err) throw err;
+            })
 
             return {
-                success: false,
-                message: 'Product already added'
+                success: 'true',
+                message: 'Product added',
             };
-        });
-
-        const newProduct = new Product({
-            crtTs: new Date(),
-            title,
-            description,
-            brand,
-            category_id,
-            images,
-            mrp
-        });
-
-        newProduct.save(err => {
-            if (err) throw err;
-        })
-
-        return {
-            success: 'true',
-            message: 'Product added',
-        };
+        } else {
+            return {
+                success: false,
+                message: 'Product already added',
+            };
+        }
     }
 
     addProductHandler(req, res) {
@@ -60,6 +77,7 @@ class ProductController {
             category_id,
             images,
             mrp,
+            features,
         } = req.body;
 
         if (!title || title.trim().length === 0) {
@@ -96,6 +114,7 @@ class ProductController {
             category_id,
             images,
             mrp,
+            features,
         };
 
         const response = productController.addProduct(data);
