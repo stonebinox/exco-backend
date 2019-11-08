@@ -38,6 +38,7 @@ var productSchema = new Schema({
         required: true,
         default: true,
     },
+    source_link: String,
 });
 
 var Product = mongoose.model('Product', productSchema);

@@ -99,4 +99,92 @@ router.get('/api/v1/hp', (req, res) => {
     });
 });
 
+router.get('/api/v1/intel', (req, res) => {
+    const category_id = '5dc57a02e87b1e7fa650e449'; // for pre-built CPUs
+    const pages = 4;
+    let addedProducts = [];
+
+    for (let i = 1; i <= pages; i++) {
+        const url = `https://www.intel.in/content/www/in/en/products/devices-systems/desktops/pcs.html?page=${i}`;
+
+        request(url, (error, response, body) => {
+            const root = parse(body);
+            const productsList = root.querySelector('.card-listings');
+
+            if (productsList) {
+                const products = productsList.childNodes;
+                products.map((product, index) => {
+                    if (product.tagName && product.tagName === 'div') {
+                        const bladeImage = product.querySelector('.blade-image').childNodes;
+                        const spanImg = bladeImage[1].querySelector('span');
+                        const imgUrl = spanImg.attributes['data-src'];
+
+                        const content = product.querySelector('.content-main');
+                        const title = content.querySelector('.title');
+                        const titleLink = title.childNodes[1];
+                        const productLink = `https://www.intel.in/${titleLink.attributes.href}`;
+                        let productTitle = titleLink.childNodes[1].innerHTML;
+
+                        const frag = productTitle.split(' ');
+                        const brand = frag[0];
+                        productTitle = productTitle.replace(brand, '');
+                        productTitle = productTitle.trim();
+
+                        const cardInfo = content.querySelector('.card-info');
+                        if (cardInfo && cardInfo.querySelector('ul')) {
+                            const descList = cardInfo.querySelector('ul').childNodes;
+                            const description = '';
+                            let features = [];
+
+                            descList.map((desc, index) => {
+                                if (desc.tagName && desc.tagName === 'li') {
+                                    let descText = desc.innerHTML;
+                                    descText = descText.trim();
+                                    if (descText !== "") {
+                                        features.push(descText);
+                                    }
+                                }
+                            });
+
+                            let mrp = product.querySelector('.price').innerHTML;
+                            mrp = mrp.replace('From', '');
+                            mrp = mrp.replace('₹', '');
+                            mrp = mrp.replace(/,/g, '');
+                            mrp = mrp.trim();
+
+                            const productDoc = {
+                                images: [
+                                    {
+                                        image_path: imgUrl,
+                                        alt_text: 'Intel'
+                                    }
+                                ],
+                                brand,
+                                title: productTitle,
+                                category_id,
+                                features,
+                                description,
+                                mrp,
+                                source_link: productLink,
+                            };
+
+                            const resp = productController.addProduct(productDoc);
+
+                            if (resp.success) {
+                                addedProducts.push(productDoc);
+                            }
+                        }
+                    }
+                });
+            }
+        });
+    }
+
+    return res.status(200).send({
+        success: true,
+        message: 'Completed parsing page',
+        products_added: addedProducts,
+    });
+});
+
 export default router;
