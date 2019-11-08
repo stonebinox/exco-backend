@@ -23,9 +23,13 @@ router.post('/api/v1/add-product', productController.addProductHandler);
 router.get('/api/v1/hp', (req, res) => {
     let addedProducts = [];
 
+    const category_id = '5dc55124c1c85b7c3f9f8441'; //for graphics cards
+
+    const pages = 1; // number of pages
+
     // loop through pages
-    for (let i = 1; i < 2; i++) {
-        const url = `https://store.hp.com/in-en/default/accessories/batteries-chargers-adapters.html?hp_facet_sub_category=Power+Packs&product_list_limit=30`;
+    for (let i = 1; i <= pages; i++) {
+        const url = `https://store.hp.com/in-en/default/accessories/graphics-cards.html?hp_facet_sub_category=Graphics+Connectors%2FAdapters&product_list_limit=30`;
         request(url, (error, response, body) => {
             if (error) throw error;
 
@@ -71,7 +75,7 @@ router.get('/api/v1/hp', (req, res) => {
                             ],
                             brand,
                             title,
-                            category_id: '5dbf1f3f699624867775f6c5', //for power banks
+                            category_id,
                             features,
                             description,
                             mrp,
