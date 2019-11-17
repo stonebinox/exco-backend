@@ -100,14 +100,16 @@ router.get('/api/v1/hp', (req, res) => {
 });
 
 router.get('/api/v1/intel', (req, res) => {
-    const category_id = '5dc57a02e87b1e7fa650e449'; // for pre-built CPUs
-    const pages = 4;
+    const category_id = '5dd18136743140d625ed8895'; // for Modems
+    const pages = 1;
     let addedProducts = [];
 
     for (let i = 1; i <= pages; i++) {
-        const url = `https://www.intel.in/content/www/in/en/products/devices-systems/desktops/pcs.html?page=${i}`;
+        const url = `https://www.intel.in/content/www/in/en/products/wireless/wi-fi-6-series.html?page=${i}`;
 
         request(url, (error, response, body) => {
+            if (error) throw error;
+
             const root = parse(body);
             const productsList = root.querySelector('.card-listings');
 
@@ -130,48 +132,62 @@ router.get('/api/v1/intel', (req, res) => {
                         productTitle = productTitle.replace(brand, '');
                         productTitle = productTitle.trim();
 
-                        const cardInfo = content.querySelector('.card-info');
-                        if (cardInfo && cardInfo.querySelector('ul')) {
-                            const descList = cardInfo.querySelector('ul').childNodes;
-                            const description = '';
-                            let features = [];
+                        if (brand !== '') {
+                            const cardInfo = content.querySelector('.card-info');
+                            if (cardInfo && cardInfo.querySelector('ul')) {
+                                const descList = cardInfo.querySelector('ul').childNodes;
+                                const description = '';
+                                let features = [];
 
-                            descList.map((desc, index) => {
-                                if (desc.tagName && desc.tagName === 'li') {
-                                    let descText = desc.innerHTML;
-                                    descText = descText.trim();
-                                    if (descText !== "") {
-                                        features.push(descText);
+                                descList.map((desc, index) => {
+                                    if (desc.tagName && desc.tagName === 'li') {
+                                        let descText = desc.innerHTML;
+                                        descText = descText.trim();
+                                        if (descText !== "") {
+                                            features.push(descText);
+                                        }
+                                    }
+                                });
+
+                                let mrp = 0;
+                                if (product.querySelector('.price')) {
+                                    mrp = product.querySelector('.price').innerHTML;
+                                    if (mrp.indexOf('Pricing Unavailable') === -1) {
+                                        mrp = mrp.replace('From', '');
+                                        mrp = mrp.replace('₹', '');
+                                        mrp = mrp.replace(/,/g, '');
+                                        mrp = mrp.trim();
+                                        if (mrp.indexOf('.') !== -1) {
+                                            const frag2 = mrp.split('.');
+                                            mrp = frag2[0];
+                                            mrp = mrp.trim();
+                                        }
+                                    } else {
+                                        mrp = 0;
                                     }
                                 }
-                            });
 
-                            let mrp = product.querySelector('.price').innerHTML;
-                            mrp = mrp.replace('From', '');
-                            mrp = mrp.replace('₹', '');
-                            mrp = mrp.replace(/,/g, '');
-                            mrp = mrp.trim();
+                                const productDoc = {
+                                    images: [
+                                        {
+                                            image_path: imgUrl,
+                                            alt_text: 'Intel'
+                                        }
+                                    ],
+                                    brand,
+                                    title: productTitle,
+                                    category_id,
+                                    features,
+                                    description,
+                                    mrp,
+                                    source_link: productLink,
+                                };
 
-                            const productDoc = {
-                                images: [
-                                    {
-                                        image_path: imgUrl,
-                                        alt_text: 'Intel'
-                                    }
-                                ],
-                                brand,
-                                title: productTitle,
-                                category_id,
-                                features,
-                                description,
-                                mrp,
-                                source_link: productLink,
-                            };
+                                const resp = productController.addProduct(productDoc);
 
-                            const resp = productController.addProduct(productDoc);
-
-                            if (resp.success) {
-                                addedProducts.push(productDoc);
+                                if (resp.success) {
+                                    addedProducts.push(productDoc);
+                                }
                             }
                         }
                     }
